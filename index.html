@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PKI &amp; TLS — Wie dein Browser dem Server vertraut</title>
+  <link rel="stylesheet" href="vendor/reveal.js/dist/reset.css">
+  <link rel="stylesheet" href="vendor/reveal.js/dist/reveal.css">
+  <link rel="stylesheet" href="vendor/reveal.js/dist/theme/white.css">
+  <link rel="stylesheet" href="css/custom.css">
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+
+<!-- ═══════════════════════════════════════════════════
+     FOLIE 1 — TITEL
+═══════════════════════════════════════════════════ -->
+<section class="slide-title" data-background-color="#12173D">
+  <div style="display:flex; align-items:center; justify-content:center; gap:2.5rem;">
+    <!-- Schild-Icon SVG -->
+    <svg width="110" height="130" viewBox="0 0 110 130" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;">
+      <path d="M55 5 L100 25 L100 65 C100 92 80 115 55 125 C30 115 10 92 10 65 L10 25 Z"
+            fill="#F8B400" stroke="#d49800" stroke-width="2"/>
+      <path d="M55 30 C55 30 42 40 42 55 C42 60 44 64 48 67 L48 80 L62 80 L62 67 C66 64 68 60 68 55 C68 40 55 30 55 30Z"
+            fill="#12173D" opacity="0.85"/>
+      <circle cx="55" cy="55" r="6" fill="#12173D" opacity="0.85"/>
+    </svg>
+    <div style="text-align:left;">
+      <h1>PKI &amp; TLS</h1>
+      <p class="subtitle">Wie dein Browser dem Server vertraut</p>
+      <p class="subtitle" style="margin-top:0.15em; opacity:0.75;">Eine Heranführung zum Thema</p>
+      <p class="team">Sertkaya Bilgehan &nbsp;·&nbsp; Wiegel Paulina &nbsp;·&nbsp; Kargl Tim</p>
+      <p class="date">26. Mai 2026</p>
+    </div>
+  </div>
+  <aside class="notes">
+    Guten Tag / Hallo zusammen — wir sind Bilgehan, Paulina und Tim, und wir wollen heute über ein Thema reden, das jeden von euch täglich betrifft, auch wenn ihr es meistens gar nicht bemerkt.
+
+    Wenn ihr heute Morgen euer Handy aufgemacht habt und eine Website besucht habt — egal ob Instagram, eure Hochschule, eure Bank — da oben in der Adressleiste war ein kleines Schloss-Symbol. Und heute zeigen wir euch, was dieses Schloss eigentlich bedeutet. Nicht die Marketing-Antwort, sondern die technische.
+
+    Wir haben 15 Minuten. Bilgehan fängt an mit dem Problem — warum Verschlüsselung allein nicht reicht. Paulina erklärt dann PKI, also die Infrastruktur dahinter. Und ich, Tim, zeige zum Schluss, wie TLS das alles in der Praxis zusammenbringt — und wo das System schon mal versagt hat.
+
+    Timing: ~1 Minute für diese Folie.
+  </aside>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     FOLIE 2 — AGENDA
+═══════════════════════════════════════════════════ -->
+<section>
+  <h2 style="margin-bottom:1rem;">Agenda</h2>
+  <div class="card-grid cols-3">
+    <div class="card">
+      <div class="card-num">Teil 1</div>
+      <div class="card-title">Das Problem</div>
+      <div class="card-speaker">Sertkaya Bilgehan</div>
+      <div class="card-body">Warum brauchen wir das Ganze? Und warum reicht Verschlüsselung allein nicht?</div>
+    </div>
+    <div class="card">
+      <div class="card-num">Teil 2</div>
+      <div class="card-title">Die Lösung: PKI</div>
+      <div class="card-speaker">Wiegel Paulina</div>
+      <div class="card-body">Vertrauenskette von Root-CA bis zur Website — wie delegiertes Vertrauen funktioniert.</div>
+    </div>
+    <div class="card">
+      <div class="card-num">Teil 3</div>
+      <div class="card-title">TLS in Aktion</div>
+      <div class="card-speaker">Kargl Tim</div>
+      <div class="card-body">Der Handshake Schritt für Schritt — und was passiert, wenn das System versagt.</div>
+    </div>
+  </div>
+  <aside class="notes">
+    Kurzer Fahrplan für heute: Wir teilen die Präsentation in drei Blöcke auf — jeder von uns hat seinen eigenen Teil.
+
+    Bilgehan beginnt mit dem "Warum" — also dem Problem, das PKI und TLS überhaupt erst notwendig macht. Paulina erklärt dann die Infrastruktur dahinter: wer stellt Zertifikate aus, warum vertraut der Browser ihnen, und wie sieht so ein Zertifikat eigentlich aus. Und ich zeige dann live — also quasi live, als Diagramm — wie TLS 1.3 das alles in einem Handshake zusammenfasst, und erzähle von einem realen Fall, wo das schiefgegangen ist.
+
+    Timing: ~30 Sekunden, dann direkt zu Bilgehan.
+  </aside>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     FOLIE 3 — TEIL-1-TRENNER
+═══════════════════════════════════════════════════ -->
+<section class="slide-divider" data-background-color="#1E2761">
+  <div class="eyebrow">Teil 1</div>
+  <h2>Das Problem</h2>
+  <h2 style="color:#CADCFC !important; font-size:0.85em; margin-top:0.3em;">Warum reicht Verschlüsselung allein nicht?</h2>
+  <p class="speaker-tag">Sertkaya Bilgehan</p>
+  <aside class="notes">
+    So, ich bin dran. Bilgehan hier.
+
+    Ich fange mit einer Frage an, die sich auf den ersten Blick komisch anhört: Verschlüsselung ist doch gut, oder? Warum reicht das nicht?
+
+    Und die Antwort ist: Verschlüsselung löst ein Problem, aber nicht das wichtigste. Was das genau heißt, zeige ich euch auf den nächsten drei Folien.
+
+    Timing: ~15 Sekunden, nur Überleitung.
+  </aside>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     FOLIE 4 — DAS SCHLOSS
+═══════════════════════════════════════════════════ -->
+<section>
+  <h2 style="margin-bottom:1rem;">Was bedeutet das Schloss?</h2>
+  <div class="lock-layout">
+    <!-- Großes Schloss im Eisblau-Kreis -->
+    <div class="lock-circle">
+      <svg width="80" height="90" viewBox="0 0 80 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="15" y="38" width="50" height="42" rx="7" fill="#1E2761"/>
+        <path d="M22 38 C22 20 58 20 58 38" stroke="#1E2761" stroke-width="8" fill="none" stroke-linecap="round"/>
+        <rect x="33" y="54" width="14" height="14" rx="3" fill="#CADCFC"/>
+        <rect x="38" y="60" width="4" height="10" rx="2" fill="#CADCFC"/>
+      </svg>
+    </div>
+    <div class="lock-right">
+      <div class="question">Was bedeutet es eigentlich?</div>
+      <div class="think-row">Die meisten denken: <strong>„Die Seite ist sicher."</strong></div>
+      <div class="think-row" style="margin-top:0.6em;">Tatsächlich bedeutet es:</div>
+      <div class="reality">① Verbindung ist verschlüsselt<br>② Server-Identität wurde bewiesen</div>
+      <div class="callout" style="margin-top:0.8rem;">
+        Heute zeigen wir, wie diese <strong>zweite Aussage</strong> zustande kommt — denn die ist die schwierigere.
+      </div>
+    </div>
+  </div>
+  <aside class="notes">
+    Okay, wann habt ihr zuletzt auf das Schloss in eurem Browser geachtet? Wahrscheinlich nie, oder? Und wenn doch, was habt ihr gedacht? "Alles gut, die Seite ist sicher."
+
+    Das ist nicht ganz falsch, aber auch nicht ganz richtig. Das Schloss macht eigentlich zwei Aussagen gleichzeitig. Erstens: die Verbindung ist verschlüsselt — niemand kann mitlesen. Zweitens: der Server hat bewiesen, dass er wirklich der ist, für den er sich ausgibt.
+
+    Und genau diese zweite Aussage ist das Interessante. Verschlüsselung allein kann das nicht leisten. Dafür brauchen wir PKI. Aber erstmal: warum brauchen wir Authentizität überhaupt?
+
+    Timing: ~1:30 Minuten.
+  </aside>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     FOLIE 5 — DREI SCHUTZZIELE
+═══════════════════════════════════════════════════ -->
+<section>
+  <h2 style="margin-bottom:1rem;">Die drei Schutzziele</h2>
+  <div class="card-grid cols-3">
+    <div class="card">
+      <div class="card-icon">
+        <svg width="36" height="36" viewBox="0 0 36 36" fill="none"><circle cx="18" cy="18" r="17" stroke="#1E2761" stroke-width="2"/><ellipse cx="18" cy="18" rx="10" ry="6" stroke="#1E2761" stroke-width="2"/><circle cx="18" cy="18" r="3" fill="#1E2761"/></svg>
+      </div>
+      <div class="card-title">Vertraulichkeit</div>
+      <div class="card-body">
+        <strong>„Niemand liest mit."</strong><br><br>
+        Lösung: Symmetrische Verschlüsselung (AES-GCM). Nur Sender und Empfänger können die Daten lesen.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-icon">
+        <svg width="36" height="36" viewBox="0 0 36 36" fill="none"><rect x="4" y="8" width="28" height="20" rx="4" stroke="#1E2761" stroke-width="2"/><path d="M10 18 L15 23 L26 13" stroke="#1E2761" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="card-title">Integrität</div>
+      <div class="card-body">
+        <strong>„Niemand verändert."</strong><br><br>
+        Lösung: MACs / AEAD. Jede Nachricht enthält einen kryptografischen Prüfwert — Manipulation fällt sofort auf.
+      </div>
+    </div>
+    <div class="card highlight">
+      <div class="card-icon">
+        <svg width="36" height="36" viewBox="0 0 36 36" fill="none"><circle cx="18" cy="18" r="17" stroke="#F8B400" stroke-width="2"/><text x="18" y="24" font-size="18" text-anchor="middle" fill="#F8B400" font-family="serif" font-weight="bold">?</text></svg>
+      </div>
+      <div class="card-title">Authentizität</div>
+      <div class="card-body">
+        <strong style="color:#F8B400;">„Bist du wirklich du?"</strong><br><br>
+        Hier wird's spannend ↓<br>Verschlüsselung und MACs setzen voraus, dass wir mit dem Richtigen reden. Aber woher wissen wir das?
+      </div>
+    </div>
+  </div>
+  <aside class="notes">
+    In der IT-Sicherheit gibt es drei klassische Schutzziele — das CIA-Triad: Confidentiality, Integrity, Authenticity. Auf Deutsch: Vertraulichkeit, Integrität, Authentizität.
+
+    Vertraulichkeit heißt: niemand liest mit. Das lösen wir mit symmetrischer Verschlüsselung, zum Beispiel AES. Integrität heißt: niemand verändert die Daten heimlich. Das lösen wir mit MACs oder AEAD-Modi.
+
+    Aber das dritte Schutzziel — Authentizität — ist das, wo Verschlüsselung allein nicht mehr reicht. Wir können noch so stark verschlüsseln, wenn wir mit dem falschen Server reden, hilft das gar nichts. Und genau das ist das Problem, das ich euch jetzt zeige.
+
+    Timing: ~1:30 Minuten.
+  </aside>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     FOLIE 6 — MITM-ATTACKE
+═══════════════════════════════════════════════════ -->
+<section>
+  <h2 style="margin-bottom:0.8rem;">Man-in-the-Middle</h2>
+  <div class="mitm-row">
+    <div class="actor alice">
+      <svg width="52" height="52" viewBox="0 0 52 52" fill="none"><circle cx="26" cy="16" r="10" fill="#CADCFC" stroke="#1E2761" stroke-width="2"/><path d="M6 46 C6 34 46 34 46 46" fill="#CADCFC" stroke="#1E2761" stroke-width="2"/></svg>
+      <div class="name">Alice</div>
+      <div class="label">du im Browser</div>
+    </div>
+    <div style="display:flex; flex-direction:column; align-items:center; gap:0.2rem;">
+      <svg width="60" height="20" viewBox="0 0 60 20"><defs><marker id="arr1" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#C0392B"/></marker></defs><line x1="2" y1="10" x2="55" y2="10" stroke="#C0392B" stroke-width="2.5" marker-end="url(#arr1)" stroke-dasharray="6,3"/></svg>
+      <svg width="60" height="20" viewBox="0 0 60 20"><defs><marker id="arr2" markerWidth="6" markerHeight="6" refX="1" refY="3" orient="auto"><path d="M6,0 L0,3 L6,6 Z" fill="#C0392B"/></marker></defs><line x1="58" y1="10" x2="5" y2="10" stroke="#C0392B" stroke-width="2.5" marker-end="url(#arr2)" stroke-dasharray="6,3"/></svg>
+    </div>
+    <div class="actor mallory">
+      <svg width="52" height="52" viewBox="0 0 52 52" fill="none"><circle cx="26" cy="16" r="10" fill="#ffdede" stroke="#C0392B" stroke-width="2"/><path d="M6 46 C6 34 46 34 46 46" fill="#ffdede" stroke="#C0392B" stroke-width="2"/><line x1="18" y1="10" x2="34" y2="22" stroke="#C0392B" stroke-width="2"/><line x1="34" y1="10" x2="18" y2="22" stroke="#C0392B" stroke-width="2"/></svg>
+      <div class="name">Mallory</div>
+      <div class="label">Café-WLAN, Router, ISP…</div>
+    </div>
+    <div style="display:flex; flex-direction:column; align-items:center; gap:0.2rem;">
+      <svg width="60" height="20" viewBox="0 0 60 20"><defs><marker id="arr3" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#C0392B"/></marker></defs><line x1="2" y1="10" x2="55" y2="10" stroke="#C0392B" stroke-width="2.5" marker-end="url(#arr3)" stroke-dasharray="6,3"/></svg>
+      <svg width="60" height="20" viewBox="0 0 60 20"><defs><marker id="arr4" markerWidth="6" markerHeight="6" refX="1" refY="3" orient="auto"><path d="M6,0 L0,3 L6,6 Z" fill="#C0392B"/></marker></defs><line x1="58" y1="10" x2="5" y2="10" stroke="#C0392B" stroke-width="2.5" marker-end="url(#arr4)" stroke-dasharray="6,3"/></svg>
+    </div>
+    <div class="actor bob">
+      <svg width="52" height="52" viewBox="0 0 52 52" fill="none"><rect x="8" y="6" width="36" height="30" rx="4" fill="#CADCFC" stroke="#1E2761" stroke-width="2"/><rect x="18" y="36" width="16" height="6" fill="#CADCFC" stroke="#1E2761" stroke-width="1.5"/><rect x="10" y="42" width="32" height="4" rx="2" fill="#1E2761"/><circle cx="26" cy="21" r="5" fill="#1E2761" opacity="0.3"/></svg>
+      <div class="name">Bob</div>
+      <div class="label">deine Bank</div>
+    </div>
+  </div>
+  <div class="callout" style="margin-top:1rem; font-size:0.42em;">
+    <strong>Verschlüsselung allein hilft nichts.</strong> Wenn Mallory zwischen Alice und Bob sitzt und Alice denkt, sie redet mit Bob — dann verschlüsselt Alice ihre Daten für Mallory. Wir brauchen eine Möglichkeit, den Server zu authentifizieren — <em>bevor</em> wir ihm etwas anvertrauen.
+  </div>
+  <aside class="notes">
+    Stellt euch vor, ihr sitzt im Café und loggt euch in euer Online-Banking ein. Die Verbindung ist verschlüsselt — super. Aber was, wenn der WLAN-Router im Café von jemandem namens Mallory betrieben wird?
+
+    Mallory kann sich zwischen euch und die Bank schalten. Sie gibt sich gegenüber euch als Bank aus, und gegenüber der Bank als ihr. Das nennt sich Man-in-the-Middle-Attacke. Eure Verschlüsselung läuft dann mit Mallory — nicht mit der Bank. Mallory sieht alles.
+
+    Das ist kein theoretisches Angriffsszenario. Das passiert in der Praxis — vor allem in unsicheren Netzwerken. Und die Lösung? Der Server muss seine Identität beweisen können. Nicht einfach behaupten — beweisen. Wie das geht, erklärt jetzt Paulina.
+
+    Timing: ~1:30 Minuten. Dann Übergabe an Paulina.
+  </aside>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     FOLIE 7 — TEIL-2-TRENNER
+═══════════════════════════════════════════════════ -->
+<section class="slide-divider" data-background-color="#1E2761">
+  <div class="eyebrow">Teil 2</div>
+  <h2>Die Lösung: PKI</h2>
+  <h2 style="color:#CADCFC !important; font-size:0.75em; margin-top:0.3em;">Public Key Infrastructure — Vertrauen, delegiert</h2>
+  <p class="speaker-tag">Wiegel Paulina</p>
+  <aside class="notes">
+    Danke, Bilgehan. Ich bin Paulina, und ich erkläre euch jetzt, wie das Problem gelöst wird.
+
+    PKI — Public Key Infrastructure — ist im Grunde ein System, das Vertrauen skalierbar macht. Klingt abstrakt, wird aber gleich sehr konkret.
+
+    Timing: ~15 Sekunden Überleitung.
+  </aside>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     FOLIE 8 — PKI-IDEE: VERTRAUEN DELEGIEREN
+═══════════════════════════════════════════════════ -->
+<section>
+  <h2 style="margin-bottom:0.8rem;">Vertrauen delegieren</h2>
+  <div class="cols vcenter">
+    <div>
+      <p style="font-size:0.5em; color:var(--text-muted); font-family:'Inter',sans-serif; margin-bottom:0.5em;">
+        Niemand kann ~400 Millionen Websites einzeln kennen.
+      </p>
+      <p style="font-size:0.5em; color:var(--navy); font-family:'Inter',sans-serif; font-weight:600; margin-bottom:1em;">
+        → Statt jeden Schlüssel direkt zu kennen, vertrauen wir<br>
+        wenigen geprüften Instanzen, die für andere bürgen.
+      </p>
+      <div class="analogy-box">
+        <div class="analogy-label">Analogie: Reisepass</div>
+        <p>
+          Wenn ein Polizist im Ausland deinen Pass akzeptiert, vertraut er nicht <em>dir</em> — er vertraut dem deutschen Staat, der den Pass ausgestellt und beglaubigt hat.<br><br>
+          Genauso bei PKI: Dein Browser kennt <code style="font-size:0.9em;">yourbank.de</code> nicht persönlich. Er vertraut einer <strong>Certificate Authority (CA)</strong>, die für <code style="font-size:0.9em;">yourbank.de</code> bürgt — und die CA kennt er.
+        </p>
+      </div>
+    </div>
+    <div style="display:flex; justify-content:center; align-items:center;">
+      <!-- Pass-Icon SVG -->
+      <svg width="140" height="180" viewBox="0 0 140 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="10" y="10" width="120" height="160" rx="10" fill="#CADCFC" stroke="#1E2761" stroke-width="2.5"/>
+        <rect x="10" y="10" width="30" height="160" rx="10" fill="#1E2761"/>
+        <circle cx="75" cy="75" r="28" fill="white" stroke="#1E2761" stroke-width="2"/>
+        <circle cx="75" cy="65" r="12" fill="#8BA8E0"/>
+        <path d="M52 95 C52 80 98 80 98 95" fill="#8BA8E0"/>
+        <rect x="42" y="112" width="66" height="5" rx="2.5" fill="#1E2761" opacity="0.3"/>
+        <rect x="42" y="122" width="50" height="5" rx="2.5" fill="#1E2761" opacity="0.3"/>
+        <rect x="42" y="132" width="58" height="5" rx="2.5" fill="#1E2761" opacity="0.3"/>
+        <text x="25" y="170" font-size="7" fill="white" font-family="monospace" transform="rotate(-90,25,170)">BUNDESREPUBLIK DEUTSCHLAND</text>
+      </svg>
+    </div>
+  </div>
+  <aside class="notes">
+    Okay, stellt euch vor, ihr müsst 400 Millionen Websites alle persönlich kennen und jedem einzelnen Schlüssel manuell vertrauen. Das ist natürlich absurd. Das kann kein Mensch und kein System leisten.
+
+    Die Lösung ist: Vertrauen delegieren. Anstatt jede Website direkt zu kennen, vertraut euer Browser einer kleinen Gruppe von besonders geprüften Instanzen — den Certificate Authorities, kurz CAs. Und diese CAs bürgen für die Websites.
+
+    Die Reisepass-Analogie macht das sehr greifbar: Wenn ihr in Japan seid und ein Polizist euren deutschen Reisepass akzeptiert, dann vertraut er nicht euch persönlich — er vertraut dem deutschen Staat, der diesen Pass ausgestellt und kryptografisch signiert hat. Genauso vertraut euer Browser nicht direkt der Bank — er vertraut der CA, die für die Bank gebürgt hat.
+
+    Timing: ~2 Minuten.
+  </aside>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     FOLIE 9 — VERTRAUENSKETTE
+═══════════════════════════════════════════════════ -->
+<section>
+  <h2 style="margin-bottom:0.8rem;">Die Vertrauenskette</h2>
+  <div class="chain-wrap">
+    <!-- Vertikales Diagramm -->
+    <div class="chain-diagram">
+      <div class="chain-box trust-store">Browser Trust Store<br><span style="font-weight:400; opacity:0.75;">~150 Roots vorinstalliert</span></div>
+      <div class="chain-arrow">▼ vertraut</div>
+      <div class="chain-box root-ca">Root CA<br><span style="font-weight:400; opacity:0.75;">selbstsigniert · offline im HSM</span></div>
+      <div class="chain-arrow">▼ signiert</div>
+      <div class="chain-box inter-ca">Intermediate CA<br><span style="font-weight:400; opacity:0.75;">tägliches Ausstellen</span></div>
+      <div class="chain-arrow">▼ signiert</div>
+      <div class="chain-box leaf">Leaf-Zertifikat<br><span style="font-weight:400; opacity:0.85;">yourbank.de + Public Key</span></div>
+    </div>
+    <!-- Erklärungen rechts -->
+    <div class="chain-side">
+      <h4>Bekannte Root CAs</h4>
+      <ul>
+        <li><strong>ISRG Root X1</strong> — Let's Encrypt</li>
+        <li><strong>DigiCert Global Root G2</strong></li>
+        <li><strong>GlobalSign Root CA</strong></li>
+        <li><strong>Sectigo</strong> (früher Comodo)</li>
+        <li><strong>Entrust Root CA</strong></li>
+      </ul>
+      <h4 style="margin-top:1em;">Warum drei Stufen?</h4>
+      <ul>
+        <li>Root-Schlüssel liegt <strong>offline</strong> im HSM — unangreifbar</li>
+        <li>Intermediates erledigen das <strong>tägliche Ausstellen</strong></li>
+        <li>Bei Kompromittierung: nur Intermediate sperren — <strong>Root bleibt sicher</strong></li>
+      </ul>
+    </div>
+  </div>
+  <aside class="notes">
+    Kommen wir jetzt zur Vertrauenskette — das ist der technische Kern von PKI.
+
+    Oben in der Kette steht der Browser Trust Store: das ist eine Liste von etwa 150 Root-CAs, die in eurem Browser oder Betriebssystem fest eingebaut sind — von Apple, Microsoft, Mozilla etc. vorinstalliert. Ihr habt denen vertraut, als ihr euer Gerät gekauft habt.
+
+    Diese Root-CAs signieren Intermediate-CAs. Und die Intermediates stellen dann die eigentlichen Zertifikate für Websites aus — die sogenannten Leaf-Zertifikate.
+
+    Warum dieser Umweg über Intermediates? Weil der private Schlüssel einer Root-CA so wertvoll ist, dass er offline in einem Hardware Security Module liegt — völlig vom Internet getrennt. Die tägliche Arbeit übernehmen die Intermediates. Und wenn ein Intermediate kompromittiert wird, kann man ihn sperren, ohne die Root anfassen zu müssen.
+
+    Timing: ~2 Minuten.
+  </aside>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     FOLIE 10 — ZERTIFIKAT-INHALT
+═══════════════════════════════════════════════════ -->
+<section>
+  <h2 style="margin-bottom:0.8rem;">Was steckt im Zertifikat?</h2>
+  <div class="cols">
+    <!-- Zertifikat-Mockup -->
+    <div class="cert-card">
+      <div class="cert-header">X.509 Zertifikat (vereinfacht)</div>
+<span class="cert-key">Subject:    </span><span class="cert-val">CN = yourbank.de</span>
+<span class="cert-key">Issuer:     </span><span class="cert-val">Let's Encrypt R3</span>
+<span class="cert-key">Valid from: </span><span class="cert-val">2026-03-12</span>
+<span class="cert-key">Valid to:   </span><span class="cert-val">2026-06-10  (90 Tage)</span>
+<span class="cert-key">Public Key: </span><span class="cert-val">ECDSA P-256</span>
+<span class="cert-key">SAN:        </span><span class="cert-val">yourbank.de</span>
+<span class="cert-val">            </span><span class="cert-val">www.yourbank.de</span>
+<span class="cert-key">Serial:     </span><span class="cert-val">03:4f:a1:…</span>
+<span class="cert-key">Signature:  </span><span class="cert-sig">(von CA signiert) ─────</span>
+    </div>
+    <!-- Die drei wichtigsten Felder -->
+    <div class="cert-fields">
+      <h4>Die drei wichtigsten Felder</h4>
+      <div class="field-row">
+        <div class="field-accent"></div>
+        <div class="field-text">
+          <strong>Subject</strong>
+          <span>Für welche Domain ist das Zertifikat ausgestellt? Browser prüft: stimmt das mit der URL überein?</span>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field-accent"></div>
+        <div class="field-text">
+          <strong>Public Key</strong>
+          <span>Der öffentliche Schlüssel des Servers — das Kernstück. Nur wer den passenden privaten Schlüssel hat, kann damit signieren.</span>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field-accent"></div>
+        <div class="field-text">
+          <strong>Signatur (der CA)</strong>
+          <span>Hier bürgt die CA. Der Browser prüft diese Signatur gegen den öffentlichen Schlüssel der CA — so schließt sich die Kette.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <aside class="notes">
+    So sieht ein X.509-Zertifikat aus — das ist das Format, das seit Jahrzehnten im Einsatz ist. In der Realität enthält es noch mehr Felder, aber diese hier sind die wichtigsten.
+
+    Subject sagt: für welche Domain wurde dieses Zertifikat ausgestellt? Der Browser prüft das gegen die URL — wenn ihr "yourbank.de" aufruft aber das Zertifikat für "evil.com" ausgestellt ist, gibt's eine Warnung.
+
+    Der Public Key ist das Herzstück: Das ist der öffentliche Schlüssel der Bank. Nur die Bank hat den dazugehörigen privaten Schlüssel. Später im Handshake muss sie damit eine Signatur erzeugen — und nur wer den privaten Schlüssel hat, kann das.
+
+    Und die Signatur der CA schließt die Kette: die CA hat mit ihrem privaten Schlüssel dieses Zertifikat unterschrieben. Der Browser kann das mit dem öffentlichen Schlüssel der CA verifizieren. Stimmt die Signatur, weiß der Browser: diese CA bürgt für diese Domain.
+
+    Timing: ~2 Minuten. Dann Übergabe an Tim.
+  </aside>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     FOLIE 11 — TEIL-3-TRENNER
+═══════════════════════════════════════════════════ -->
+<section class="slide-divider" data-background-color="#1E2761">
+  <div class="eyebrow">Teil 3</div>
+  <h2>TLS in Aktion</h2>
+  <h2 style="color:#CADCFC !important; font-size:0.75em; margin-top:0.3em;">Der Handshake — und wenn das System schiefgeht</h2>
+  <p class="speaker-tag">Kargl Tim</p>
+  <aside class="notes">
+    Danke, Paulina. Ich bin Tim, und ich zeige euch jetzt, wie das alles in der Praxis zusammenkommt — in Form des TLS-Handshakes.
+
+    TLS 1.3 — das ist die aktuelle Version — macht das in wenigen Millisekunden. Und dann erzähle ich euch von einem realen Fall, wo das System versagt hat.
+
+    Timing: ~15 Sekunden Überleitung.
+  </aside>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     FOLIE 12 — TLS 1.3 HANDSHAKE
+═══════════════════════════════════════════════════ -->
+<section>
+  <h2 style="margin-bottom:0.5rem;">TLS 1.3 — Der Handshake</h2>
+  <div class="handshake">
+    <!-- Lifelines Header -->
+    <div class="hs-lifelines">
+      <span>Browser (Client)</span>
+      <span>Server (yourbank.de)</span>
+    </div>
+    <!-- Lifeline-Linien und Nachrichten -->
+    <div style="position:relative; padding: 0 4rem;">
+      <!-- Vertikale Linien -->
+      <div style="position:absolute; left:4rem; top:0; bottom:0; width:2px; background:#CADCFC; opacity:0.6;"></div>
+      <div style="position:absolute; right:4rem; top:0; bottom:0; width:2px; background:#CADCFC; opacity:0.6;"></div>
+
+      <!-- Nachricht 1: ClientHello → -->
+      <div style="display:flex; align-items:center; margin:0.3rem 0; gap:0.5rem;">
+        <div style="font-size:0.36em; font-family:'JetBrains Mono',monospace; background:#fff; border:1px solid #CADCFC; padding:0.2em 0.5em; border-radius:4px; white-space:nowrap; color:#12173D;">
+          ClientHello
+          <span style="display:block; font-size:0.8em; color:#4A5568; font-family:'Inter',sans-serif;">Cipher-Liste + temporärer Public Key (ECDHE)</span>
+        </div>
+        <div style="flex:1; height:2px; background:#F8B400; position:relative;">
+          <div style="position:absolute; right:-1px; top:-5px; border:6px solid transparent; border-left-color:#F8B400;"></div>
+        </div>
+      </div>
+
+      <!-- Nachricht 2: ← ServerHello + Certificate -->
+      <div style="display:flex; align-items:center; margin:0.3rem 0; gap:0.5rem; flex-direction:row-reverse;">
+        <div style="font-size:0.36em; font-family:'JetBrains Mono',monospace; background:#fff; border:1px solid #CADCFC; padding:0.2em 0.5em; border-radius:4px; white-space:nowrap; color:#12173D; text-align:right;">
+          ServerHello + Certificate
+          <span style="display:block; font-size:0.8em; color:#4A5568; font-family:'Inter',sans-serif;">Public Key + komplette Zertifikatskette</span>
+        </div>
+        <div style="flex:1; height:2px; background:#F8B400; position:relative;">
+          <div style="position:absolute; left:-1px; top:-5px; border:6px solid transparent; border-right-color:#F8B400;"></div>
+        </div>
+      </div>
+
+      <!-- Nachricht 3: ← CertificateVerify + Finished -->
+      <div style="display:flex; align-items:center; margin:0.3rem 0; gap:0.5rem; flex-direction:row-reverse;">
+        <div style="font-size:0.36em; font-family:'JetBrains Mono',monospace; background:#fff; border:1px solid #CADCFC; padding:0.2em 0.5em; border-radius:4px; white-space:nowrap; color:#12173D; text-align:right;">
+          CertificateVerify + Finished
+          <span style="display:block; font-size:0.8em; color:#4A5568; font-family:'Inter',sans-serif;">Signatur beweist: ICH habe den privaten Schlüssel</span>
+        </div>
+        <div style="flex:1; height:2px; background:#F8B400; position:relative;">
+          <div style="position:absolute; left:-1px; top:-5px; border:6px solid transparent; border-right-color:#F8B400;"></div>
+        </div>
+      </div>
+
+      <!-- Nachricht 4: Finished → -->
+      <div style="display:flex; align-items:center; margin:0.3rem 0; gap:0.5rem;">
+        <div style="font-size:0.36em; font-family:'JetBrains Mono',monospace; background:#fff; border:1px solid #CADCFC; padding:0.2em 0.5em; border-radius:4px; white-space:nowrap; color:#12173D;">
+          Finished
+          <span style="display:block; font-size:0.8em; color:#4A5568; font-family:'Inter',sans-serif;">Browser hat alles geprüft → Verbindung steht</span>
+        </div>
+        <div style="flex:1; height:2px; background:#F8B400; position:relative;">
+          <div style="position:absolute; right:-1px; top:-5px; border:6px solid transparent; border-left-color:#F8B400;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Callouts -->
+    <div class="hs-callouts" style="margin-top:0.6rem;">
+      <div class="hs-callout gold-box">
+        <div class="hs-callout-title">Browser prüft</div>
+        <div class="hs-callout-body">Zertifikatskette &nbsp;·&nbsp; Hostname &nbsp;·&nbsp; Gültigkeitsdauer &nbsp;·&nbsp; Signatur &nbsp;·&nbsp; Sperrstatus (OCSP)</div>
+      </div>
+      <div class="hs-callout navy-box">
+        <div class="hs-callout-title">Forward Secrecy</div>
+        <div class="hs-callout-body">Session-Key aus ephemeren ECDHE-Keys — ein Mitschnitt von heute bleibt auch in 10 Jahren unknackbar.</div>
+      </div>
+    </div>
+  </div>
+  <aside class="notes">
+    Okay, jetzt sehen wir den Handshake — das Herzstück von TLS 1.3. Das Schöne daran: TLS 1.3 hat den Handshake gegenüber TLS 1.2 stark vereinfacht. In der Praxis dauert das alles wenige Millisekunden.
+
+    Schritt 1: Der Browser schickt ein ClientHello — eine Liste der unterstützten Cipher Suites und einen temporären öffentlichen Schlüssel für den Schlüsselaustausch (ECDHE).
+
+    Schritt 2: Der Server antwortet mit ServerHello und schickt sein Zertifikat mit — also die komplette Kette von Leaf bis Root.
+
+    Schritt 3: Der Server schickt CertificateVerify — eine Signatur, die mit seinem privaten Schlüssel erzeugt wurde. Das ist der entscheidende Beweis: nur wer den privaten Schlüssel hat, kann das. Und der private Schlüssel verlässt niemals den Server.
+
+    Schritt 4: Der Browser schickt Finished — er hat alles geprüft, die Verbindung steht.
+
+    Was prüft der Browser genau? Die Zertifikatskette, den Hostnamen, ob das Zertifikat noch gültig ist, ob es widerrufen wurde, und die Signatur der CA.
+
+    Und das coole Feature von TLS 1.3 — Forward Secrecy: die Session-Keys werden aus temporären, ephemeren Keys generiert. Selbst wenn jemand den gesamten Datenverkehr aufzeichnet und später den privaten Schlüssel des Servers stiehlt, kann er die alten Sessions nicht entschlüsseln. Die Session-Keys existieren nur für diesen einen Moment.
+
+    Timing: ~3 Minuten — das ist die wichtigste Folie.
+  </aside>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     FOLIE 13 — WENN'S SCHIEFGEHT
+═══════════════════════════════════════════════════ -->
+<section>
+  <h2 style="margin-bottom:0.3rem;">Wenn das System ausgetrickst wird</h2>
+  <p style="font-size:0.42em; color:var(--text-muted); font-family:'Inter',sans-serif; margin-bottom:0.8rem;">PKI ist nicht unverwundbar — der schwächste Punkt sind die CAs selbst.</p>
+  <div class="failure-grid">
+    <div class="failure-box red-box">
+      <div class="fbox-header">Fallbeispiel: DigiNotar, 2011</div>
+      <div class="fbox-body">
+        Niederländische CA wurde gehackt. Angreifer — mutmaßlich iranische Behörden — stellten <strong>echte, gültige Zertifikate</strong> für <code>*.google.com</code> aus.<br><br>
+        Damit hörten sie Gmail-Konten von Hunderttausenden iranischen Bürgern ab — der Browser zeigte kein Schlosssymbol, alles sah normal aus.<br><br>
+        <strong>Folge:</strong> Alle Browser entfernten DigiNotar aus ihren Trust Stores innerhalb weniger Tage. Die Firma war insolvent.
+      </div>
+    </div>
+    <div class="failure-box green-box">
+      <div class="fbox-header">Die Antwort: Certificate Transparency</div>
+      <div class="fbox-body">
+        Seit <strong>2018 Pflicht</strong> für alle Browser-akzeptierten Zertifikate: Jedes neu ausgestellte Zertifikat muss in öffentlichen, Append-Only-Logs erscheinen — unveränderlich.<br><br>
+        Domain-Inhaber können laufend überwachen, ob für ihre Domain unbekannte Zertifikate ausgestellt wurden. Jede Fehlausstellung wird sofort sichtbar.<br><br>
+        Tool: <strong>crt.sh</strong> — öffentliche Suche in CT-Logs.
+      </div>
+    </div>
+  </div>
+  <div class="footer-bar">
+    Weitere Risiken: gestohlene Server-Keys &nbsp;·&nbsp; Fehl-Ausstellungen durch CAs &nbsp;·&nbsp; Downgrade-Angriffe (in TLS 1.3 weitgehend geschlossen)
+  </div>
+  <aside class="notes">
+    PKI ist ein sehr robustes System — aber es ist nicht unfehlbar. Der schwächste Punkt ist das Vertrauen in die CAs selbst. Was passiert, wenn eine CA kompromittiert wird?
+
+    2011 wurde DigiNotar, eine niederländische CA, gehackt. Die Angreifer — es wird mutmaßlich iranischen Geheimdiensten zugeschrieben — haben nicht einfach Daten gestohlen. Sie haben die Infrastruktur genutzt, um echte, kryptografisch gültige Zertifikate für *.google.com auszustellen. Und damit haben sie den Datenverkehr von Hunderttausenden iranischen Gmail-Nutzern abgehört. Der Browser zeigte das grüne Schloss — alles wirkte legitim.
+
+    Als das aufflog, haben Chrome, Firefox und Internet Explorer DigiNotar innerhalb weniger Tage aus ihren Trust Stores entfernt. Das war das Ende der Firma.
+
+    Die Antwort auf DigiNotar und ähnliche Vorfälle heißt Certificate Transparency — CT. Seit 2018 muss jedes Zertifikat, das Browser akzeptieren sollen, in öffentlichen, unveränderlichen Logs eingetragen sein. Domain-Inhaber können damit laufend prüfen: hat jemand für meine Domain ein Zertifikat ausgestellt, das ich nicht kenne? Wenn ja, ist das ein rotes Flag.
+
+    Mit crt.sh kann das jeder machen — einfach die Domain eingeben und schauen, welche Zertifikate existieren.
+
+    Timing: ~2 Minuten.
+  </aside>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     FOLIE 14 — TAKE-HOME
+═══════════════════════════════════════════════════ -->
+<section class="slide-takehome" data-background-color="#12173D">
+  <div class="eyebrow">Zum Mitnehmen</div>
+  <h2>Was das Schloss-Symbol wirklich bedeutet</h2>
+  <div class="card-grid cols-3" style="margin-top:1rem;">
+    <div class="card">
+      <div class="card-num" style="color:#4ade80;">Bedeutet</div>
+      <div class="card-title">Authentifizierte, verschlüsselte Verbindung</div>
+      <div class="card-body">…zum Inhaber <em>dieser</em> Domain. Mehr nicht — aber das ist viel.</div>
+    </div>
+    <div class="card">
+      <div class="card-num" style="color:#f87171;">Bedeutet nicht</div>
+      <div class="card-title">„Die Seite ist vertrauenswürdig"</div>
+      <div class="card-body"><code style="font-size:0.9em;">paypa1.de</code> bekommt auch ein gültiges Zertifikat. Das Schloss schützt euch vor Mallory — nicht vor Betrug.</div>
+    </div>
+    <div class="card">
+      <div class="card-num" style="color:#60a5fa;">Funktioniert, weil</div>
+      <div class="card-title">Eine kleine, geprüfte Gruppe bürgt</div>
+      <div class="card-body">~150 Root-CAs für das gesamte Web. Certificate Transparency macht jede CA öffentlich überprüfbar.</div>
+    </div>
+  </div>
+  <aside class="notes">
+    Okay, kurz zusammenfassen — was nehmt ihr heute mit?
+
+    Das Schloss bedeutet: ihr habt eine verschlüsselte Verbindung zu dem Server, dem die Domain gehört. Die Identität wurde kryptografisch bewiesen. Das ist nicht nichts — das ist eine echte Garantie.
+
+    Was es nicht bedeutet: dass die Seite legitim ist. Eine Phishing-Seite mit einem Tippfehler in der URL — paypa1.de — kann auch ein gültiges Zertifikat haben. Let's Encrypt stellt kostenlos Zertifikate aus, ohne zu prüfen, ob die Betreiber böse Absichten haben. Das Schloss schützt die Verbindung, nicht den Inhalt.
+
+    Und das alles funktioniert, weil ein kleines Ökosystem von etwa 150 Root-CAs weltweit für den Rest des Webs bürgt. Und Certificate Transparency stellt sicher, dass keine CA im Verborgenen agieren kann.
+
+    Timing: ~1 Minute.
+  </aside>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     FOLIE 15 — ABSCHLUSS
+═══════════════════════════════════════════════════ -->
+<section class="slide-outro" data-background-color="#1E2761">
+  <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%;">
+    <!-- Schild-Icon, kleiner -->
+    <svg width="70" height="84" viewBox="0 0 110 130" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-bottom:0.8rem; opacity:0.85;">
+      <path d="M55 5 L100 25 L100 65 C100 92 80 115 55 125 C30 115 10 92 10 65 L10 25 Z" fill="#F8B400" stroke="#d49800" stroke-width="2"/>
+      <path d="M55 30 C55 30 42 40 42 55 C42 60 44 64 48 67 L48 80 L62 80 L62 67 C66 64 68 60 68 55 C68 40 55 30 55 30Z" fill="#12173D" opacity="0.85"/>
+      <circle cx="55" cy="55" r="6" fill="#12173D" opacity="0.85"/>
+    </svg>
+    <h2>Danke für eure Aufmerksamkeit</h2>
+    <p class="sub">Fragen?</p>
+    <div class="team-final">
+      Sertkaya Bilgehan &nbsp;·&nbsp; Wiegel Paulina &nbsp;·&nbsp; Kargl Tim
+    </div>
+  </div>
+  <aside class="notes">
+    Das war unsere Präsentation — danke fürs Zuhören!
+
+    Wir haben euch heute gezeigt, warum Verschlüsselung allein nicht ausreicht, wie PKI das Problem des delegierten Vertrauens löst, und wie TLS 1.3 das alles in einem eleganten Handshake zusammenbringt.
+
+    Wenn ihr das nächste Mal auf ein Schloss-Symbol schaut, wisst ihr jetzt, was dahinter steckt: eine Kette aus kryptografischem Vertrauen, die in eurem Browser beginnt, über eine CA geht, und beim Server endet.
+
+    Gibt's Fragen?
+
+    [Falls keine Fragen: "Alles klar, dann sind wir durch — danke!"]
+  </aside>
+</section>
+
+</div><!-- /slides -->
+</div><!-- /reveal -->
+
+<script src="vendor/reveal.js/dist/reveal.js"></script>
+<script src="vendor/reveal.js/plugin/notes.js"></script>
+<script src="vendor/reveal.js/plugin/highlight.js"></script>
+<script>
+  Reveal.initialize({
+    hash: true,
+    slideNumber: 'c/t',
+    progress: true,
+    transition: 'fade',
+    transitionSpeed: 'fast',
+
+    // PDF-Export: alle Fragments auffalten
+    pdfSeparateFragments: false,
+    pdfMaxPagesPerSlide: 1,
+
+    plugins: [ RevealNotes, RevealHighlight ],
+
+    // Keyboard: S öffnet Speaker View
+    keyboard: {
+      83: function() { RevealNotes.open(); }
+    }
+  });
+</script>
+</body>
+</html>
