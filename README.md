@@ -1,72 +1,78 @@
-# PKI & TLS — Präsentation
+# PKI & TLS — Presentation
 
-**„Wie dein Browser dem Server vertraut"**  
-Sertkaya Bilgehan · Wiegel Paulina · Kargl Tim · 26. Mai 2026
+**"How Your Browser Trusts the Server"**  
+Sertkaya Bilgehan · Wiegel Paulina · Kargl Tim · May 26, 2026
 
 ---
 
-## Setup (30 Sekunden)
+## Setup (30 seconds)
 
-Kein Node, kein npm, kein Build-Step nötig.
+No Node, no npm, no build step required.
 
 ```bash
 git clone <repo-url>
 cd pki-tls-praesi
-# Doppelklick auf index.html   — oder:
+# Double-click index.html   — or:
 open index.html
 ```
 
-Funktioniert offline — alles (Reveal.js, Fonts) liegt lokal im Repo.
+Works fully offline — everything (Reveal.js, fonts) is bundled locally in the repo.
 
 ---
 
-## Präsentation steuern
+## Controls
 
-| Taste | Aktion |
-|-------|--------|
-| `→` / `Space` | nächste Folie |
-| `←` | zurück |
-| `F` | Vollbild |
-| `S` | Speaker View (Notizen + Timer) |
-| `Esc` | Übersicht aller Folien |
-| `B` | Bildschirm schwärzen (Pause) |
+| Key | Action |
+|-----|--------|
+| `→` / `Space` | next slide |
+| `←` | previous slide |
+| `F` | fullscreen |
+| `S` | Speaker View (notes + timer) |
+| `O` | slide overview |
+| `B` | blackout screen (pause) |
 
-**Speaker View** öffnet ein zweites Fenster mit Sprecher-Notizen und einem Timer. Auf dem Beamer läuft das Hauptfenster, der Laptop zeigt die Notizen.
+**Speaker View** opens a second window with speaker notes and a timer. Run the main window on the projector, keep the laptop showing the notes window.
+
+> **Note:** Speaker View requires a local server. Start one with:
+> ```bash
+> python3 -m http.server 8765
+> ```
+> Then open `http://localhost:8765` in Chrome.
 
 ---
 
-## PDF-Export (Backup)
+## PDF Export (Backup)
 
-Falls der Laptop beim Vortrag nicht funktioniert:
+If the laptop fails at the venue:
 
-1. Öffne `index.html` in **Chrome** oder **Chromium**
-2. Füge `?print-pdf` an die URL an:  
+1. Open `index.html` in **Chrome** or **Chromium**
+2. Append `?print-pdf` to the URL:  
    `file:///…/pki-tls-praesi/index.html?print-pdf`
-3. `Cmd+P` → **Als PDF speichern** → Ränder: Keine, Hintergrundgrafiken: ✓
-4. Fertig — alle 15 Folien als druckbares PDF
+3. `Cmd+P` → **Save as PDF** → Margins: None, Background graphics: ✓
+4. Done — all 15 slides as a printable PDF
 
 ---
 
-## Struktur
+## Project Structure
 
 ```
 pki-tls-praesi/
-├── index.html          ← Präsentation (alle 15 Folien)
+├── index.html          ← presentation (all 15 slides + speaker notes)
 ├── css/
-│   └── custom.css      ← Design (Navy/Gold-Palette, Fonts)
-├── fonts/              ← Fraunces, Inter, JetBrains Mono (offline)
+│   └── custom.css      ← design (Navy/Gold palette, typography)
+├── fonts/              ← Fraunces, Inter, JetBrains Mono (offline, woff2)
 ├── vendor/
-│   └── reveal.js/      ← Reveal.js 6 (lokal, kein CDN)
+│   └── reveal.js/      ← Reveal.js 6 (local, no CDN)
 └── README.md
 ```
 
 ---
 
-## Vortragsaufteilung (~15 Minuten)
+## Talk Structure (~15 minutes)
 
-| Teil | Sprecher | Folien | ~Zeit |
-|------|----------|--------|-------|
-| Das Problem | Sertkaya Bilgehan | 3–6 | 4 min |
-| Die Lösung: PKI | Wiegel Paulina | 7–10 | 5 min |
-| TLS in Aktion | Kargl Tim | 11–14 | 5 min |
-| Titel / Agenda / Abschluss | alle | 1, 2, 15 | 1 min |
+| Part | Speaker | Slides | Time |
+|------|---------|--------|------|
+| The Problem | Sertkaya Bilgehan | 3–6 | ~4 min |
+| The Solution: PKI | Wiegel Paulina | 7–10 | ~5 min |
+| TLS in Action | Kargl Tim | 11–14 | ~5 min |
+| Title / Agenda / Outro | all | 1, 2, 15 | ~1 min |
