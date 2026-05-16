@@ -407,7 +407,67 @@
 </section>
 
 <!-- ═══════════════════════════════════════════════════
-     SLIDE 12 — TLS 1.3 HANDSHAKE
+     SLIDE 12 — CIPHER SUITES
+═══════════════════════════════════════════════════ -->
+<section>
+  <h2 style="margin-bottom:0.5rem;">Cipher Suites</h2>
+  <p style="font-size:0.44em; color:var(--text-muted); font-family:'Inter',sans-serif; margin-bottom:0.8rem;">
+    A cipher suite is a named set of algorithms that defines how a TLS connection is secured.<br>
+    During the handshake, client and server negotiate which one to use.
+  </p>
+
+  <!-- 4 Komponenten -->
+  <div class="card-grid cols-2" style="margin-bottom:0.8rem;">
+    <div class="card fragment fade-up" style="padding:0.8rem 1rem;">
+      <div class="card-num">① Key Exchange</div>
+      <div class="card-title" style="font-size:0.6em;">How do both sides agree on a shared secret?</div>
+      <div class="card-body">e.g. <code>ECDHE</code> — each side generates a temporary key pair, combines them to get a shared secret neither sent over the wire.</div>
+    </div>
+    <div class="card fragment fade-up" style="padding:0.8rem 1rem;">
+      <div class="card-num">② Authentication</div>
+      <div class="card-title" style="font-size:0.6em;">How does the server prove its identity?</div>
+      <div class="card-body">e.g. <code>RSA</code> or <code>ECDSA</code> — the server signs a message with its private key; the browser verifies it with the public key from the certificate.</div>
+    </div>
+    <div class="card fragment fade-up" style="padding:0.8rem 1rem;">
+      <div class="card-num">③ Bulk Encryption</div>
+      <div class="card-title" style="font-size:0.6em;">How is the actual data encrypted?</div>
+      <div class="card-body">e.g. <code>AES-256-GCM</code> — symmetric encryption using the shared secret. Fast and secure for large amounts of data.</div>
+    </div>
+    <div class="card fragment fade-up" style="padding:0.8rem 1rem;">
+      <div class="card-num">④ Integrity (MAC)</div>
+      <div class="card-title" style="font-size:0.6em;">How is tampering detected?</div>
+      <div class="card-body">e.g. <code>SHA-384</code> — a cryptographic hash attached to every message. Any modification breaks the hash.</div>
+    </div>
+  </div>
+
+  <!-- TLS 1.2 vs 1.3 -->
+  <div class="cols fragment fade-up" style="gap:1rem;">
+    <div style="background:#f0f4ff; border-radius:8px; padding:0.6em 0.9em; flex:1;">
+      <div style="font-size:0.32em; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:0.3em; font-family:'Inter',sans-serif;">TLS 1.2 — all four explicit</div>
+      <code style="font-size:0.32em; color:var(--navy);">TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384</code>
+    </div>
+    <div style="background:#fff8e1; border:1px solid var(--gold); border-radius:8px; padding:0.6em 0.9em; flex:1;">
+      <div style="font-size:0.32em; font-weight:700; color:#b07d00; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:0.3em; font-family:'Inter',sans-serif;">TLS 1.3 — key exchange &amp; auth decoupled</div>
+      <code style="font-size:0.32em; color:var(--navy);">TLS_AES_256_GCM_SHA384</code>
+      <span style="font-size:0.28em; color:var(--text-muted); display:block; margin-top:0.3em; font-family:'Inter',sans-serif;">Key exchange is always ECDHE — no weak options left to negotiate.</span>
+    </div>
+  </div>
+
+  <aside class="notes">
+    Before we get to the handshake, let's quickly clarify what a cipher suite actually is — because it'll come up in the next slide.
+
+    A cipher suite is basically a recipe. It tells both sides: these are the exact algorithms we'll use for this connection. During the handshake, the browser sends a list of cipher suites it supports, the server picks one from that list, and that's what both use.
+
+    A cipher suite has four jobs to do. Key exchange — how do we agree on a shared secret without an attacker being able to learn it? Authentication — how does the server prove it's really the server? Encryption — how do we scramble the actual data? And integrity — how do we detect if anyone tampers with a message in transit?
+
+    The naming changed between TLS 1.2 and 1.3. In TLS 1.2 you'd see something like TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384 — every algorithm spelled out. In TLS 1.3, key exchange and authentication are always handled by strong defaults, so the cipher suite only names the encryption and hash — shorter and no weak options left to negotiate down to.
+
+    Timing: ~1:30 minutes.
+  </aside>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 13 — TLS 1.3 HANDSHAKE
 ═══════════════════════════════════════════════════ -->
 <section>
   <h2 style="margin-bottom:0.5rem;">TLS 1.3 — The Handshake</h2>
@@ -423,7 +483,7 @@
       <div class="fragment fade-right" style="display:flex; align-items:center; margin:0.3rem 0; gap:0.5rem;">
         <div style="font-size:0.36em; font-family:'JetBrains Mono',monospace; background:#fff; border:1px solid #CADCFC; padding:0.2em 0.5em; border-radius:4px; white-space:nowrap; color:#12173D;">
           ClientHello
-          <span style="display:block; font-size:0.8em; color:#4A5568; font-family:'Inter',sans-serif;">Cipher suites (recipes: which algorithms to use for encryption, auth &amp; integrity) + temporary public key (ECDHE — ephemeral key exchange)</span>
+          <span style="display:block; font-size:0.8em; color:#4A5568; font-family:'Inter',sans-serif;">List of supported cipher suites + temporary public key (ECDHE)</span>
         </div>
         <div style="flex:1; height:2px; background:#F8B400; position:relative;">
           <div style="position:absolute; right:-1px; top:-5px; border:6px solid transparent; border-left-color:#F8B400;"></div>
