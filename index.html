@@ -145,7 +145,7 @@
       <div class="card-title">Confidentiality</div>
       <div class="card-body">
         <strong>"Nobody eavesdrops."</strong><br><br>
-        Solution: Symmetric encryption (AES-GCM). Only sender and receiver can read the data.
+        Solution: Symmetric encryption (AES-GCM — the industry-standard algorithm). Only sender and receiver can read the data.
       </div>
     </div>
     <div class="card fragment fade-up">
@@ -155,7 +155,7 @@
       <div class="card-title">Integrity</div>
       <div class="card-body">
         <strong>"Nobody tampers."</strong><br><br>
-        Solution: MACs / AEAD. Every message carries a cryptographic checksum — any manipulation is detected immediately.
+        Solution: MACs (Message Authentication Codes) / AEAD (Authenticated Encryption with Associated Data). Every message carries a cryptographic checksum — any manipulation is detected immediately.
       </div>
     </div>
     <div class="card highlight fragment fade-up">
@@ -297,7 +297,7 @@
     <div class="chain-diagram">
       <div class="chain-box trust-store fragment fade-down">Browser Trust Store<br><span style="font-weight:400; opacity:0.75;">~150 roots pre-installed</span></div>
       <div class="chain-arrow fragment fade-in">▼ trusts</div>
-      <div class="chain-box root-ca fragment fade-down">Root CA<br><span style="font-weight:400; opacity:0.75;">self-signed · offline in HSM</span></div>
+      <div class="chain-box root-ca fragment fade-down">Root CA<br><span style="font-weight:400; opacity:0.75;">self-signed · offline in HSM (Hardware Security Module)</span></div>
       <div class="chain-arrow fragment fade-in">▼ signs</div>
       <div class="chain-box inter-ca fragment fade-down">Intermediate CA<br><span style="font-weight:400; opacity:0.75;">day-to-day issuance</span></div>
       <div class="chain-arrow fragment fade-in">▼ signs</div>
@@ -314,7 +314,7 @@
       </ul>
       <h4 style="margin-top:1em;">Why three levels?</h4>
       <ul>
-        <li>Root key stays <strong>offline</strong> in an HSM — unreachable</li>
+        <li>Root key stays <strong>offline</strong> in an HSM (tamper-proof hardware vault) — unreachable</li>
         <li>Intermediates handle <strong>day-to-day issuance</strong></li>
         <li>If compromised: revoke only the Intermediate — <strong>Root stays safe</strong></li>
       </ul>
@@ -345,8 +345,8 @@
 <span class="cert-key">Issuer:     </span><span class="cert-val">Let's Encrypt R3</span>
 <span class="cert-key">Valid from: </span><span class="cert-val">2026-03-12</span>
 <span class="cert-key">Valid to:   </span><span class="cert-val">2026-06-10  (90 days)</span>
-<span class="cert-key">Public Key: </span><span class="cert-val">ECDSA P-256</span>
-<span class="cert-key">SAN:        </span><span class="cert-val">yourbank.de</span>
+<span class="cert-key">Public Key: </span><span class="cert-val">ECDSA P-256 (elliptic curve algorithm)</span>
+<span class="cert-key">SAN:        </span><span class="cert-val">yourbank.de  ← Subject Alternative Names</span>
 <span class="cert-val">            </span><span class="cert-val">www.yourbank.de</span>
 <span class="cert-key">Serial:     </span><span class="cert-val">03:4f:a1:…</span>
 <span class="cert-key">Signature:  </span><span class="cert-sig">(signed by CA) ─────</span>
@@ -423,7 +423,7 @@
       <div class="fragment fade-right" style="display:flex; align-items:center; margin:0.3rem 0; gap:0.5rem;">
         <div style="font-size:0.36em; font-family:'JetBrains Mono',monospace; background:#fff; border:1px solid #CADCFC; padding:0.2em 0.5em; border-radius:4px; white-space:nowrap; color:#12173D;">
           ClientHello
-          <span style="display:block; font-size:0.8em; color:#4A5568; font-family:'Inter',sans-serif;">Cipher list + temporary public key (ECDHE)</span>
+          <span style="display:block; font-size:0.8em; color:#4A5568; font-family:'Inter',sans-serif;">Supported cipher suites + temporary public key (ECDHE — ephemeral key exchange)</span>
         </div>
         <div style="flex:1; height:2px; background:#F8B400; position:relative;">
           <div style="position:absolute; right:-1px; top:-5px; border:6px solid transparent; border-left-color:#F8B400;"></div>
@@ -464,11 +464,11 @@
     <div class="hs-callouts fragment fade-up" style="margin-top:0.6rem;">
       <div class="hs-callout gold-box">
         <div class="hs-callout-title">Browser verifies</div>
-        <div class="hs-callout-body">Certificate chain &nbsp;·&nbsp; Hostname &nbsp;·&nbsp; Validity period &nbsp;·&nbsp; Signature &nbsp;·&nbsp; Revocation status (OCSP)</div>
+        <div class="hs-callout-body">Certificate chain &nbsp;·&nbsp; Hostname &nbsp;·&nbsp; Validity period &nbsp;·&nbsp; Signature &nbsp;·&nbsp; Revocation status (OCSP — checks if cert was revoked early)</div>
       </div>
       <div class="hs-callout navy-box">
         <div class="hs-callout-title">Forward Secrecy</div>
-        <div class="hs-callout-body">Session key derived from ephemeral ECDHE keys — traffic recorded today stays unreadable even in 10 years.</div>
+        <div class="hs-callout-body">Session key derived from ephemeral (one-time, never reused) ECDHE keys — traffic recorded today stays unreadable even in 10 years.</div>
       </div>
     </div>
   </div>
