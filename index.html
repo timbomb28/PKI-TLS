@@ -516,7 +516,7 @@
     </div>
   </div>
   <div class="footer-bar fragment fade-in">
-    Further risks: stolen server keys &nbsp;·&nbsp; CA mis-issuance &nbsp;·&nbsp; Downgrade attacks (largely closed in TLS 1.3)
+    Further risks covered on the next slide →
   </div>
   <aside class="notes">
     PKI is a very robust system — but it's not infallible. The weakest point is the trust placed in CAs themselves. What happens when a CA gets compromised?
@@ -534,7 +534,52 @@
 </section>
 
 <!-- ═══════════════════════════════════════════════════
-     SLIDE 14 — KEY TAKEAWAYS
+     SLIDE 14 — FURTHER RISKS
+═══════════════════════════════════════════════════ -->
+<section>
+  <h2 style="margin-bottom:0.3rem;">Further Risks</h2>
+  <p style="font-size:0.42em; color:var(--text-muted); font-family:'Inter',sans-serif; margin-bottom:0.8rem;">PKI and TLS are robust — but no system is perfect.</p>
+  <div class="card-grid cols-3">
+    <div class="card fragment fade-up">
+      <div class="card-num">Risk 1</div>
+      <div class="card-title">Stolen Server Keys</div>
+      <div class="card-body">
+        If an attacker steals a server's <strong>private key</strong>, they can impersonate that server — even with a valid certificate.<br><br>
+        <strong>Mitigation:</strong> Short validity periods (90 days with Let's Encrypt), regular key rotation, and certificate revocation (OCSP).
+      </div>
+    </div>
+    <div class="card fragment fade-up">
+      <div class="card-num">Risk 2</div>
+      <div class="card-title">CA Mis-issuance</div>
+      <div class="card-body">
+        A CA accidentally issues a certificate for a domain to the <strong>wrong person</strong> — through human error or a flawed validation process, not necessarily a hack.<br><br>
+        <strong>Mitigation:</strong> Certificate Transparency logs catch mis-issued certificates within hours.
+      </div>
+    </div>
+    <div class="card fragment fade-up">
+      <div class="card-num">Risk 3</div>
+      <div class="card-title">Downgrade Attacks</div>
+      <div class="card-body">
+        An attacker tries to force both sides to use an <strong>older, weaker version</strong> of TLS (e.g., TLS 1.0) with known vulnerabilities.<br><br>
+        <strong>Mitigation:</strong> TLS 1.3 removed all legacy options entirely — no weak fallback exists anymore.
+      </div>
+    </div>
+  </div>
+  <aside class="notes">
+    Okay, before we wrap up — three more risks worth knowing about, even if they're less dramatic than DigiNotar.
+
+    First: stolen server keys. A certificate proves identity — but only as long as the private key stays secret. If an attacker gets hold of it, they can impersonate the server perfectly. That's why certificates have short lifetimes — 90 days with Let's Encrypt — so even a stolen key becomes useless quickly.
+
+    Second: CA mis-issuance. This doesn't require a hack. Sometimes a CA makes a mistake in their validation process and issues a certificate to the wrong person. It's rare but happens. Again, Certificate Transparency catches this — the mis-issued cert shows up in the public log and the domain owner gets alerted.
+
+    Third: downgrade attacks. Older TLS versions had real weaknesses. An attacker in the middle could try to force both sides to negotiate an old version — say TLS 1.0 — and then exploit a known vulnerability. TLS 1.3 fixed this by simply removing all the old, weak options. There's no fallback to exploit.
+
+    Timing: ~1 minute.
+  </aside>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 15 — KEY TAKEAWAYS
 ═══════════════════════════════════════════════════ -->
 <section class="slide-takehome" data-background-color="#12173D">
   <div class="eyebrow">Key Takeaways</div>
